@@ -4,7 +4,7 @@ import os
 from groq import Groq
 import logging
 import boto3
-
+import json
 
 app = FastAPI()
 
@@ -21,11 +21,11 @@ class ChatResponse(BaseModel):
 # Load your API key from AWS Secrets Manager
 def get_secret(secret_name):
     session = boto3.session.Session()
-    client = session.client(service_name='secretsmanager', region_name='your-region')  # Replace 'your-region' with the AWS region
+    client = session.client(service_name='secretsmanager', region_name='us-east-1')  # Replace 'your-region' with the AWS region
     secret_value = client.get_secret_value(SecretId=secret_name)
     return secret_value['SecretString']
 
-GROQ_API_KEY = get_secret('your-secret-name')  # Replace 'your-secret-name' with the actual name of your secret
+GROQ_API_KEY = json.loads(get_secret('groq_key'))['GROQ_API']  # Replace 'your-secret-name' with the actual name of your secret
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat_completion(request: ChatRequest):
@@ -44,4 +44,4 @@ async def chat_completion(request: ChatRequest):
         return ChatResponse(response=response)  # Return an instance of ChatResponse
     except Exception as e:
         logging.error(f"Error occurred: {str(e)}")  # Log the error
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
